@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>30-day trends</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f7f6f2;
+    --card: #ffffff;
+    --border: #e4e2da;
+    --text-primary: #1f1e1b;
+    --text-secondary: #6b6a63;
+    --text-muted: #9c9a92;
+    --accent: #0f6e56;
+    --accent-bg: #e1f5ee;
+    --accent-line: #5dcaa5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 48px 20px;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--text-primary);
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 500; margin: 0 0 4px; }
+  .subtitle { font-size: 13px; color: var(--text-secondary); margin: 0 0 24px; }
+
+  .view-toggle { display: flex; gap: 8px; margin-bottom: 24px; }
+  .view-toggle button {
+    flex: 1; padding: 10px 16px; font-size: 14px; font-weight: 500;
+    border: 1.5px solid var(--border); border-radius: 10px; background: var(--card);
+    color: var(--text-secondary); cursor: pointer;
+  }
+  .view-toggle button.active { border-color: var(--accent-line); background: var(--accent-bg); color: var(--accent); }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+  .tabs button {
+    padding: 6px 12px; font-size: 12.5px; border-radius: 100px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text-secondary); cursor: pointer;
+  }
+  .tabs button.active { border-color: var(--accent-line); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+
+  .chart-wrap { position: relative; height: 320px; }
+  .chart-wrap.tall { height: 520px; }
+  .no-data {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    font-size: 13px; color: var(--text-muted); text-align: center; padding: 0 20px; pointer-events: none;
+  }
+  .no-data.show { display: flex; }
+
+  table.avg { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.avg th { text-align: left; padding: 8px 6px; font-weight: 500; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+  table.avg td { padding: 8px 6px; border-bottom: 1px solid var(--border); }
+  table.avg td.num { text-align: right; }
+  table.avg tr:last-child td { border-bottom: none; }
+  .null { color: var(--text-muted); font-style: italic; }
+
+  .goal-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .goal-row button {
+    padding: 6px 14px; font-size: 12.5px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text-secondary); cursor: pointer;
+  }
+  .goal-label { font-size: 12.5px; color: var(--text-muted); }
+  .goal-editor { display: none; align-items: center; gap: 6px; }
+  .goal-editor.show { display: flex; }
+  .goal-editor input {
+    width: 70px; padding: 5px 8px; font-size: 12.5px; border-radius: 8px;
+    border: 1px solid var(--border); color: var(--text-primary); background: var(--card);
+  }
+  .goal-editor button.primary { border-color: var(--accent-line); background: var(--accent-bg); color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>30-day checklist trends</h1>
+    <p class="subtitle">Last 30 days, oldest logged day on the left, today on the right</p>
+
+    <div class="view-toggle">
+      <button id="btn-view-trends" class="active">Trends</button>
+      <button id="btn-view-averages">Averages</button>
+      <button id="btn-view-progress">Progress</button>
+    </div>
+
+    <div id="view-trends" class="card">
+      <div id="tabs" class="tabs"></div>
+      <div class="chart-wrap">
+        <canvas id="trendChart" role="img" aria-label="Line chart of elapsed time in minutes over the last 30 days for the selected item">No data logged yet.</canvas>
+      </div>
+      <div class="goal-row">
+        <button id="setGoalBtn">Set goal</button>
+        <span id="goalLabel" class="goal-label"></span>
+        <div id="goalEditor" class="goal-editor">
+          <input type="number" id="goalInput" min="0" step="1" placeholder="Minutes">
+          <button id="goalSaveBtn" class="primary">Save</button>
+          <button id="goalClearBtn">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-averages" class="card">
+      <table class="avg">
+        <thead><tr><th>Item</th><th class="num">Average elapsed (min)</th></tr></thead>
+        <tbody id="avg-body"></tbody>
+      </table>
+    </div>
+
+    <div id="view-progress" class="card">
+      <div class="chart-wrap tall">
+        <canvas id="progressChart" role="img" aria-label="Line chart showing, for each of the last 30 days, the last checklist item completed in order before the first incomplete item, with Start at the bottom and Screens at the top">No progress logged yet.</canvas>
+        <div id="noProgressData" class="no-data show">No days logged yet. Once you start completing items in order, this will show how far down the checklist you get each day.</div>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script>
+  // Items in checklist order. "Start" marks the beginning of the run and is
+  // excluded from the Trends/Averages tabs (it has no elapsed time of its own)
+  // but is included as the baseline row on the Progress chart.
+  const ITEMS_ALL = [
+    "Start", "Morning Routine", "Cambrian", "Cross the threshhold", "Morning Prayer",
+    "Sweeps and tactics", "Money Management", "Guitar Training", "Piano Training",
+    "Singing", "First Rally", "Post Breakfast Weight Management", "Flexibility Training",
+    "Training", "Boxing Training", "Movement", "Knowledge or Skills",
+    "Stocks (Addon videos currently Separate)", "Acting Training", "Screens"
+  ];
+  const ITEMS = ITEMS_ALL.slice(1);
+
+  // Window starts at the earlier of (a) the earliest logged day or (b)
+  // yesterday, so there are always at least 2 days on the axis to establish
+  // a left-to-right direction, and grows further left as more history piles
+  // up, up to a 30-day cap. Oldest date is leftmost, today is rightmost.
+  const DATES = ["Jul 21", "Jul 22"];
+
+  // Elapsed minutes per item per day, pulled from checklist-history.json.
+  // Both Jul 21 and Jul 22 (today) have real logged data.
+  const DATA = {};
+  ITEMS.forEach(name => { DATA[name] = new Array(DATES.length).fill(null); });
+  DATA["Morning Routine"][0] = 117; // Jul 21: 1h 57m after Start (09:48 -> 11:45)
+  DATA["Morning Routine"][1] = 39;  // Jul 22: 39 min after Start (06:48 -> 07:27)
+  DATA["Cambrian"][0] = 4; // Jul 21: 4 min after Morning Routine (11:45 -> 11:49)
+  // Cambrian wasn't completed on Jul 22, so DATA["Cambrian"][1] stays null.
+
+  // Progress depth per day: index into ITEMS_ALL of the last item completed
+  // in order, before hitting the first item logged as not completed. Null
+  // means the day wasn't logged at all.
+  const PROGRESS = new Array(DATES.length).fill(null);
+  PROGRESS[0] = 2; // Jul 21: Start, Morning Routine, Cambrian done; Cross the threshhold not done
+  PROGRESS[1] = 1; // Jul 22: Start, Morning Routine done; Cambrian not done
+
+  function average(arr) {
+    const vals = arr.filter(v => v !== null && v !== undefined && !isNaN(v));
+    if (!vals.length) return null;
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  }
+
+  // Averages table
+  const tbody = document.getElementById('avg-body');
+  ITEMS.forEach(name => {
+    const avg = average(DATA[name]);
+    const tr = document.createElement('tr');
+    const label = avg === null ? '<span class="null">not logged yet</span>' : avg.toFixed(1);
+    tr.innerHTML = `<td>${name}</td><td class="num">${label}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Tabs
+  const tabsEl = document.getElementById('tabs');
+  ITEMS.forEach((name, i) => {
+    const b = document.createElement('button');
+    b.textContent = name;
+    b.className = i === 0 ? 'active' : '';
+    b.addEventListener('click', () => selectItem(name, b));
+    tabsEl.appendChild(b);
+  });
+
+  const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const lineColor = '#0f6e56';
+  const gridColor = isDark ? 'rgba(255,255,255,0.08)' : '#e4e2da';
+  const tickColor = isDark ? '#9c9a92' : '#6b6a63';
+
+  // Per-item time goals, remembered in localStorage across reloads and
+  // across nightly file regenerations (localStorage is tied to the browser,
+  // not the file content).
+  const GOALS_KEY = 'checklistGoals';
+  function loadGoals() {
+    try { return JSON.parse(localStorage.getItem(GOALS_KEY) || '{}'); } catch (e) { return {}; }
+  }
+  function saveGoals(g) { localStorage.setItem(GOALS_KEY, JSON.stringify(g)); }
+  let goals = loadGoals();
+  let currentItem = ITEMS[0];
+  function goalArrayFor(name) {
+    const g = goals[name];
+    return (g === undefined || g === null) ? new Array(DATES.length).fill(null) : new Array(DATES.length).fill(g);
+  }
+  function updateGoalLabel() {
+    const g = goals[currentItem];
+    document.getElementById('goalLabel').textContent = (g === undefined || g === null)
+      ? 'No goal set' : `Goal: ${g} min`;
+  }
+
+  const ctx = document.getElementById('trendChart');
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: DATES,
+      datasets: [{
+        label: 'Elapsed minutes',
+        data: DATA[ITEMS[0]],
+        borderColor: lineColor,
+        backgroundColor: lineColor,
+        spanGaps: false,
+        tension: 0.25,
+        pointRadius: 3,
+        borderWidth: 2
+      }, {
+        label: 'Goal',
+        data: goalArrayFor(ITEMS[0]),
+        borderColor: '#e24b4a',
+        backgroundColor: '#e24b4a',
+        borderDash: [6, 4],
+        borderWidth: 1.5,
+        pointRadius: 0,
+        spanGaps: false,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Elapsed time (minutes)', color: tickColor },
+          ticks: { color: tickColor },
+          grid: { color: gridColor }
+        },
+        x: {
+          title: { display: true, text: 'Last 30 days', color: tickColor },
+          ticks: { color: tickColor, maxRotation: 45, autoSkip: true },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  function selectItem(name, btn) {
+    tabsEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentItem = name;
+    chart.data.datasets[0].data = DATA[name];
+    chart.data.datasets[0].label = name;
+    chart.data.datasets[1].data = goalArrayFor(name);
+    chart.update();
+    updateGoalLabel();
+    if (typeof closeGoalEditor === 'function') closeGoalEditor();
+  }
+
+  updateGoalLabel();
+
+  const goalEditor = document.getElementById('goalEditor');
+  const goalInput = document.getElementById('goalInput');
+  const goalErrorId = 'goalError';
+
+  function openGoalEditor() {
+    const existing = goals[currentItem];
+    goalInput.value = (existing === undefined || existing === null) ? '' : String(existing);
+    goalEditor.classList.add('show');
+    goalInput.focus();
+    goalInput.select();
+  }
+  function closeGoalEditor() {
+    goalEditor.classList.remove('show');
+  }
+  function applyGoal() {
+    const trimmed = goalInput.value.trim();
+    if (trimmed === '') {
+      delete goals[currentItem];
+    } else {
+      const num = Number(trimmed);
+      if (!Number.isFinite(num) || num < 0) {
+        goalInput.style.borderColor = '#e24b4a';
+        return;
+      }
+      goalInput.style.borderColor = '';
+      goals[currentItem] = num;
+    }
+    saveGoals(goals);
+    chart.data.datasets[1].data = goalArrayFor(currentItem);
+    chart.update();
+    updateGoalLabel();
+    closeGoalEditor();
+  }
+  function clearGoal() {
+    delete goals[currentItem];
+    saveGoals(goals);
+    chart.data.datasets[1].data = goalArrayFor(currentItem);
+    chart.update();
+    updateGoalLabel();
+    closeGoalEditor();
+  }
+
+  document.getElementById('setGoalBtn').addEventListener('click', () => {
+    if (goalEditor.classList.contains('show')) { closeGoalEditor(); } else { openGoalEditor(); }
+  });
+  document.getElementById('goalSaveBtn').addEventListener('click', applyGoal);
+  document.getElementById('goalClearBtn').addEventListener('click', clearGoal);
+  goalInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') applyGoal();
+    if (e.key === 'Escape') closeGoalEditor();
+  });
+
+  // Progress chart: y-axis lists every checklist item, Start at the bottom,
+  // Screens at the top. Each day's point sits on the row of the last item
+  // completed in order that day (a gap means the day wasn't logged).
+  const progressCtx = document.getElementById('progressChart');
+  const progressChart = new Chart(progressCtx, {
+    type: 'line',
+    data: {
+      labels: DATES,
+      datasets: [{
+        label: 'Checklist item reached',
+        data: PROGRESS,
+        borderColor: lineColor,
+        backgroundColor: lineColor,
+        spanGaps: false,
+        tension: 0.2,
+        pointRadius: 3,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          min: -1,
+          max: ITEMS_ALL.length - 1,
+          ticks: {
+            stepSize: 1,
+            color: tickColor,
+            font: { size: 11 },
+            callback: (v) => (v >= 0 && Number.isInteger(v)) ? ITEMS_ALL[v] : ''
+          },
+          grid: { color: gridColor }
+        },
+        x: {
+          title: { display: true, text: 'Last 30 days', color: tickColor },
+          ticks: { color: tickColor, maxRotation: 45, autoSkip: true },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  const noProgressData = document.getElementById('noProgressData');
+  const hasProgressData = PROGRESS.some(v => v !== null);
+  noProgressData.classList.toggle('show', !hasProgressData);
+
+  // View toggle
+  const btnTrends = document.getElementById('btn-view-trends');
+  const btnAverages = document.getElementById('btn-view-averages');
+  const btnProgress = document.getElementById('btn-view-progress');
+  const viewTrends = document.getElementById('view-trends');
+  const viewAverages = document.getElementById('view-averages');
+  const viewProgress = document.getElementById('view-progress');
+  viewAverages.style.display = 'none';
+  viewProgress.style.display = 'none';
+
+  function showView(which) {
+    [btnTrends, btnAverages, btnProgress].forEach(b => b.classList.remove('active'));
+    [viewTrends, viewAverages, viewProgress].forEach(v => v.style.display = 'none');
+    if (which === 'trends') { btnTrends.classList.add('active'); viewTrends.style.display = ''; }
+    if (which === 'averages') { btnAverages.classList.add('active'); viewAverages.style.display = ''; }
+    if (which === 'progress') { btnProgress.classList.add('active'); viewProgress.style.display = ''; }
+  }
+  btnTrends.addEventListener('click', () => showView('trends'));
+  btnAverages.addEventListener('click', () => showView('averages'));
+  btnProgress.addEventListener('click', () => showView('progress'));
+</script>
+</body>
+</html>

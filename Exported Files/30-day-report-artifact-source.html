@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>30-Day Report</title>
+<style>
+  :root { color-scheme: light; }
+  html, body { margin: 0; padding: 0; background: #f4f2ef; min-height: 100%; }
+  * { box-sizing: border-box; }
+  #page { padding: 32px 16px; display: flex; justify-content: center; }
+  #app {
+    background: #0a0a0a; color: #c19c6e;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    max-width: 640px; width: 100%; margin: 0 auto;
+    padding: 24px 24px 20px; border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  }
+  .title { color: #c19c6e; font-size: 22px; font-weight: 700; text-align: center; margin: 0 0 4px; letter-spacing: 0.5px; }
+  .subtitle { color: #777; font-size: 12px; text-align: center; margin: 0 0 22px; line-height: 1.5; }
+  .section { margin-bottom: 20px; padding: 16px; background: #141414; border-radius: 6px; border: 1px solid #262626; }
+  .section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #777; margin: 0 0 12px; }
+  .section p.hint { font-size: 12px; color: #888; line-height: 1.5; margin: 8px 0 0; }
+  .btn {
+    border: none; border-radius: 3px; color: #ffffff; font-size: 13px; font-weight: 700;
+    font-family: inherit; padding: 11px 20px; cursor: pointer; transition: background 0.15s ease;
+    width: 100%;
+  }
+  .btn-log { background: #8b5a2b; }
+  .btn-log:hover { background: #a16a3a; }
+  .btn-report { background: #2e5a2e; }
+  .btn-report:hover { background: #3a6a3a; }
+  .btn-secondary { background: #2a2a2a; margin-top: 8px; }
+  .btn-secondary:hover { background: #363636; }
+  .btn-clear { background: transparent; color: #ff5555; border: 1px solid #3a2222; width: auto; padding: 8px 14px; font-size: 11px; }
+  .btn-clear:hover { background: #221010; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  input[type="file"] { display: none; }
+  textarea#csv-input {
+    width: 100%; height: 90px; background: #1a1a1a; color: #c19c6e;
+    border: 2px solid #444444; border-radius: 3px; font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+    font-size: 12px; padding: 10px 12px; resize: vertical; outline: none; margin-bottom: 10px;
+  }
+  textarea#csv-input:focus { border-color: #c19c6e; }
+  .status-line { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .status-count { font-size: 26px; font-weight: 700; color: #c19c6e; }
+  .flash { font-size: 12px; margin-top: 10px; min-height: 16px; }
+  .flash.ok { color: #55dd55; }
+  .flash.err { color: #ff5555; }
+  .flash.info { color: #c19c6e; }
+  table.hist-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 4px; }
+  table.hist-table th { text-align: left; color: #777; font-weight: 500; padding: 4px 6px; border-bottom: 1px solid #262626; }
+  table.hist-table td { padding: 4px 6px; border-bottom: 1px solid #1c1c1c; color: #c19c6e; }
+  .empty-hist { color: #555; font-size: 12px; font-style: italic; padding: 8px 0; }
+  .footer-row { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div id="page">
+  <div id="app">
+    <h1 class="title">30-Day Report</h1>
+    <p class="subtitle">Logs a snapshot of your checklist each day, then builds a 30-day item &times; day report as a downloadable .ods.</p>
+
+    <div class="section">
+      <div class="status-line">
+        <div><span class="status-count" id="day-count">0</span><span style="color:#555;font-size:14px;"> / 30 days logged</span></div>
+      </div>
+      <p class="hint" style="margin:0 0 10px;">Paste today's checklist CSV below (from your Checklist artifact's Export tab &rarr; Copy CSV), or upload the .csv file. Everything is processed locally in your browser &mdash; nothing leaves this page.</p>
+      <textarea id="csv-input" placeholder="Item,Completed,Priority,Time Completed&#10;Morning Routine,Yes,No,6:15 AM&#10;..."></textarea>
+      <input type="file" id="file-input" accept=".csv,text/csv" />
+      <button class="btn btn-log" id="log-btn">Log Today from Pasted CSV</button>
+      <button class="btn btn-secondary" id="upload-btn">Or Upload a CSV File Instead</button>
+      <div id="log-flash" class="flash"></div>
+    </div>
+
+    <div class="section">
+      <h2>History logged so far</h2>
+      <div id="hist-wrap"></div>
+    </div>
+
+    <div class="section">
+      <button class="btn btn-report" id="report-btn">Generate 30-Day Report (.ods)</button>
+      <p class="hint">Columns = last 30 days, rows = every item ever seen. Completed tasks show time elapsed since the previous completion that day. Tasks logged but not completed show <span style="color:#ff4444;">None</span> in red. Days with no log show <span style="color:#999;">null</span> in grey.</p>
+      <div id="report-flash" class="flash"></div>
+    </div>
+
+    <div class="footer-row">
+      <span></span>
+      <button class="btn btn-clear" id="clear-btn">Clear all history</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const HISTORY_KEY = "checklist-30day-history";
+  const csvInput = document.getElementById("csv-input");
+  const fileInput = document.getElementById("file-input");
+  const logBtn = document.getElementById("log-btn");
+  const uploadBtn = document.getElementById("upload-btn");
+  const reportBtn = document.getElementById("report-btn");
+  const clearBtn = document.getElementById("clear-btn");
+  const logFlash = document.getElementById("log-flash");
+  const reportFlash = document.getElementById("report-flash");
+  const dayCountEl = document.getElementById("day-count");
+  const histWrap = document.getElementById("hist-wrap");
+
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  function loadHistory() {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveHistory(hist) {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  }
+
+  function flash(el, text, cls) {
+    el.textContent = text;
+    el.className = "flash " + (cls || "");
+  }
+
+  // ---- Minimal RFC4180-ish CSV parser (handles quoted fields, escaped quotes, commas in quotes) ----
+  function parseCsv(text) {
+    const rows = [];
+    let row = [];
+    let field = "";
+    let inQuotes = false;
+    text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i++; }
+          else { inQuotes = false; }
+        } else {
+          field += c;
+        }
+      } else {
+        if (c === '"') inQuotes = true;
+        else if (c === ",") { row.push(field); field = ""; }
+        else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+        else field += c;
+      }
+    }
+    if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+    return rows.filter(r => !(r.length === 1 && r[0].trim() === ""));
+  }
+
+  // Parse a time string like "7:45 AM" / "14:05" into minutes-since-midnight.
+  function parseTimeToMinutes(str) {
+    if (!str) return null;
+    str = String(str).trim();
+    let m = str.match(/^(\d{1,2}):(\d{2})\s*([AaPp][Mm])?$/);
+    if (!m) return null;
+    let hh = parseInt(m[1], 10);
+    const mm = parseInt(m[2], 10);
+    const ampm = m[3] ? m[3].toUpperCase() : null;
+    if (ampm === "PM" && hh !== 12) hh += 12;
+    if (ampm === "AM" && hh === 12) hh = 0;
+    return hh * 60 + mm;
+  }
+
+  function formatDuration(mins) {
+    if (mins == null || isNaN(mins) || mins < 0) return null;
+    if (mins < 60) return mins + " min";
+    const h = Math.floor(mins / 60);
+    const rem = mins % 60;
+    return rem === 0 ? h + "h" : h + "h " + rem + "m";
+  }
+
+  // Parse CSV rows (array-of-arrays incl. header) into ordered item records for one day.
+  // Expected columns: Item, Completed, Priority, Time Completed (extra columns ignored).
+  function parseChecklistRows(rows) {
+    const body = rows.slice(1).filter(r => r && r[0] != null && String(r[0]).trim() !== "");
+    const records = [];
+    let lastMinutes = null;
+    body.forEach(r => {
+      const name = String(r[0]).trim();
+      const completedRaw = r[1] != null ? String(r[1]).trim().toLowerCase() : "";
+      const completed = completedRaw === "yes" || completedRaw === "true";
+      const timeStr = r[3] != null ? String(r[3]).trim() : "";
+      let value = null;
+      if (completed) {
+        const curMinutes = parseTimeToMinutes(timeStr);
+        if (curMinutes != null && lastMinutes != null) {
+          let diff = curMinutes - lastMinutes;
+          if (diff < 0) diff += 24 * 60; // safety for midnight rollover
+          value = formatDuration(diff);
+        } else if (timeStr) {
+          value = timeStr; // first completion of the day: no baseline, show the clock time
+        }
+        if (curMinutes != null) lastMinutes = curMinutes;
+      }
+      records.push({ name, completed, value });
+    });
+    return records;
+  }
+
+  function logFromCsvText(text) {
+    if (!text || !text.trim()) {
+      flash(logFlash, "Nothing to log — paste or upload a CSV first.", "err");
+      return;
+    }
+    const rows = parseCsv(text);
+    const records = parseChecklistRows(rows);
+    if (records.length === 0) {
+      flash(logFlash, "Couldn't find any item rows in that CSV.", "err");
+      return;
+    }
+    const hist = loadHistory();
+    const key = todayKey();
+    hist[key] = { loggedAt: new Date().toISOString(), items: records };
+    saveHistory(hist);
+    flash(logFlash, "Logged " + records.length + " items for today ✓", "ok");
+    renderHistory();
+  }
+
+  logBtn.addEventListener("click", () => logFromCsvText(csvInput.value));
+
+  uploadBtn.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      csvInput.value = e.target.result;
+      logFromCsvText(e.target.result);
+    };
+    reader.onerror = () => flash(logFlash, "Couldn't read that file.", "err");
+    reader.readAsText(file);
+    fileInput.value = "";
+  });
+
+  clearBtn.addEventListener("click", () => {
+    if (confirm("Clear all logged history? This can't be undone.")) {
+      localStorage.removeItem(HISTORY_KEY);
+      renderHistory();
+      flash(logFlash, "History cleared.", "info");
+    }
+  });
+
+  function renderHistory() {
+    const hist = loadHistory();
+    const keys = Object.keys(hist).sort();
+    dayCountEl.textContent = Math.min(keys.length, 30);
+
+    if (keys.length === 0) {
+      histWrap.innerHTML = '<div class="empty-hist">No days logged yet. Paste today\'s CSV above to start.</div>';
+      return;
+    }
+    let html = '<table class="hist-table"><thead><tr><th>Date</th><th>Items</th><th>Completed</th></tr></thead><tbody>';
+    keys.slice().reverse().slice(0, 10).forEach(k => {
+      const day = hist[k];
+      const done = day.items.filter(i => i.completed).length;
+      html += "<tr><td>" + k + "</td><td>" + day.items.length + "</td><td>" + done + "</td></tr>";
+    });
+    html += "</tbody></table>";
+    if (keys.length > 10) html += '<p class="hint">Showing 10 most recent of ' + keys.length + ' logged days.</p>';
+    histWrap.innerHTML = html;
+  }
+
+  // ---- ODS generation (hand-written ODF XML + hand-written ZIP, no external libraries) ----
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function buildContentXml(items, days) {
+    const parts = [];
+    parts.push('<?xml version="1.0" encoding="UTF-8"?>');
+    parts.push('<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" office:version="1.2">');
+    parts.push('<office:automatic-styles>');
+    parts.push('<style:style style:name="ceHeader" style:family="table-cell"><style:table-cell-properties fo:background-color="#2b2b2b"/><style:text-properties fo:color="#ffffff" fo:font-weight="bold"/></style:style>');
+    parts.push('<style:style style:name="ceItem" style:family="table-cell"><style:text-properties fo:font-weight="bold"/></style:style>');
+    parts.push('<style:style style:name="ceNone" style:family="table-cell"><style:text-properties fo:color="#ff0000"/></style:style>');
+    parts.push('<style:style style:name="ceNull" style:family="table-cell"><style:text-properties fo:color="#bbbbbb" fo:font-style="italic"/></style:style>');
+    parts.push('<style:style style:name="ceDone" style:family="table-cell"><style:text-properties fo:color="#000000"/></style:style>');
+    parts.push('<style:style style:name="coWide" style:family="table-column"><style:table-column-properties style:column-width="1.8in"/></style:style>');
+    parts.push('<style:style style:name="coDay" style:family="table-column"><style:table-column-properties style:column-width="0.85in"/></style:style>');
+    parts.push('</office:automatic-styles>');
+    parts.push('<office:body><office:spreadsheet>');
+    parts.push('<table:table table:name="30-Day Report">');
+    parts.push('<table:table-column table:style-name="coWide"/>');
+    parts.push('<table:table-column table:style-name="coDay" table:number-columns-repeated="' + days.length + '"/>');
+
+    parts.push('<table:table-row>');
+    parts.push('<table:table-cell table:style-name="ceHeader" office:value-type="string"><text:p>Item</text:p></table:table-cell>');
+    days.forEach(d => {
+      parts.push('<table:table-cell table:style-name="ceHeader" office:value-type="string"><text:p>' + esc(d.label) + '</text:p></table:table-cell>');
+    });
+    parts.push('</table:table-row>');
+
+    items.forEach(item => {
+      parts.push('<table:table-row>');
+      parts.push('<table:table-cell table:style-name="ceItem" office:value-type="string"><text:p>' + esc(item) + '</text:p></table:table-cell>');
+      days.forEach(d => {
+        const rec = d.records[item];
+        if (!rec) {
+          parts.push('<table:table-cell table:style-name="ceNull" office:value-type="string"><text:p>null</text:p></table:table-cell>');
+        } else if (rec.completed) {
+          const val = rec.value || "✓";
+          parts.push('<table:table-cell table:style-name="ceDone" office:value-type="string"><text:p>' + esc(val) + '</text:p></table:table-cell>');
+        } else {
+          parts.push('<table:table-cell table:style-name="ceNone" office:value-type="string"><text:p>None</text:p></table:table-cell>');
+        }
+      });
+      parts.push('</table:table-row>');
+    });
+
+    parts.push('</table:table></office:spreadsheet></office:body></office:document-content>');
+    return parts.join("");
+  }
+
+  const MANIFEST_XML = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.2">\n' +
+    '<manifest:file-entry manifest:full-path="/" manifest:version="1.2" manifest:media-type="application/vnd.oasis.opendocument.spreadsheet"/>\n' +
+    '<manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>\n' +
+    '</manifest:manifest>';
+
+  // -- Minimal pure-JS ZIP writer (STORE / no compression), no external dependencies --
+  let crc32Table = null;
+  function crc32(bytes) {
+    if (!crc32Table) {
+      crc32Table = [];
+      for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        crc32Table[n] = c >>> 0;
+      }
+    }
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) crc = crc32Table[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+  function u16(n) { return [n & 0xFF, (n >>> 8) & 0xFF]; }
+  function u32(n) { return [n & 0xFF, (n >>> 8) & 0xFF, (n >>> 16) & 0xFF, (n >>> 24) & 0xFF]; }
+
+  function buildZip(entries) {
+    const localParts = [];
+    const centralParts = [];
+    let offset = 0;
+    const time = 0, date = 0x21;
+
+    entries.forEach(entry => {
+      const nameBytes = new TextEncoder().encode(entry.name);
+      const data = entry.data;
+      const crc = crc32(data);
+      const size = data.length;
+
+      const localHeader = new Uint8Array([
+        ...u32(0x04034b50), ...u16(20), ...u16(0), ...u16(0), ...u16(time), ...u16(date),
+        ...u32(crc), ...u32(size), ...u32(size), ...u16(nameBytes.length), ...u16(0)
+      ]);
+      localParts.push(localHeader, nameBytes, data);
+
+      const centralHeader = new Uint8Array([
+        ...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0), ...u16(0), ...u16(time), ...u16(date),
+        ...u32(crc), ...u32(size), ...u32(size), ...u16(nameBytes.length), ...u16(0), ...u16(0),
+        ...u16(0), ...u16(0), ...u32(0), ...u32(offset)
+      ]);
+      centralParts.push(centralHeader, nameBytes);
+
+      offset += localHeader.length + nameBytes.length + data.length;
+    });
+
+    const centralDirOffset = offset;
+    let centralSize = 0;
+    centralParts.forEach(p => centralSize += p.length);
+
+    const eocd = new Uint8Array([
+      ...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(entries.length), ...u16(entries.length),
+      ...u32(centralSize), ...u32(centralDirOffset), ...u16(0)
+    ]);
+
+    const allParts = [...localParts, ...centralParts, eocd];
+    let total = 0;
+    allParts.forEach(p => total += p.length);
+    const out = new Uint8Array(total);
+    let pos = 0;
+    allParts.forEach(p => { out.set(p, pos); pos += p.length; });
+    return out;
+  }
+
+  function generateReport() {
+    const hist = loadHistory();
+    const keys = Object.keys(hist);
+    if (keys.length === 0) {
+      flash(reportFlash, "No history logged yet — log at least one day first.", "err");
+      return;
+    }
+
+    // Master item list: order from the most recently logged day, plus any older
+    // items not present in that day appended at the end in first-seen order.
+    const sortedKeys = keys.slice().sort();
+    const latestKey = sortedKeys[sortedKeys.length - 1];
+    const items = [];
+    const seen = new Set();
+    hist[latestKey].items.forEach(i => { if (!seen.has(i.name)) { items.push(i.name); seen.add(i.name); } });
+    sortedKeys.forEach(k => {
+      hist[k].items.forEach(i => { if (!seen.has(i.name)) { items.push(i.name); seen.add(i.name); } });
+    });
+
+    // Last 30 days ending today.
+    const days = [];
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      const label = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      const dayLog = hist[key];
+      const records = {};
+      if (dayLog) dayLog.items.forEach(rec => { records[rec.name] = rec; });
+      days.push({ label, records });
+    }
+
+    const contentXml = buildContentXml(items, days);
+    const enc = new TextEncoder();
+    const zipBytes = buildZip([
+      { name: "mimetype", data: enc.encode("application/vnd.oasis.opendocument.spreadsheet") },
+      { name: "META-INF/manifest.xml", data: enc.encode(MANIFEST_XML) },
+      { name: "content.xml", data: enc.encode(contentXml) }
+    ]);
+
+    const blob = new Blob([zipBytes], { type: "application/vnd.oasis.opendocument.spreadsheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "30-day-report.ods";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    flash(reportFlash, "Downloaded 30-day-report.ods ✓", "ok");
+  }
+
+  reportBtn.addEventListener("click", () => {
+    try { generateReport(); }
+    catch (err) { flash(reportFlash, "Failed to generate report: " + err.message, "err"); }
+  });
+
+  renderHistory();
+})();
+</script>
+</body>
+</html>

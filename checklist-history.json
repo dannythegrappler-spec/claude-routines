@@ -1,0 +1,212 @@
+{
+  "2026-07-21": {
+    "loggedAt": "2026-07-21T23:10:21.118853",
+    "items": [
+      {
+        "name": "Start",
+        "completed": true,
+        "value": "09:48:00"
+      },
+      {
+        "name": "Morning Routine",
+        "completed": true,
+        "value": "11:45:00"
+      },
+      {
+        "name": "Cambrian",
+        "completed": true,
+        "value": "11:49:00"
+      },
+      {
+        "name": "Cross the threshhold",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Morning Prayer",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Sweeps and tactics",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Money Management",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Guitar Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Piano Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Singing",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "First Rally",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Post Breakfast Weight Management",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Flexibility Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Boxing Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Movement",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Knowledge or Skills",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Stocks (Addon videos currently Separate)",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Acting Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Screens",
+        "completed": false,
+        "value": null
+      }
+    ]
+  },
+  "2026-07-22": {
+    "loggedAt": "2026-07-22T09:21:05.107388",
+    "items": [
+      {
+        "name": "Start",
+        "completed": true,
+        "value": "06:48:00"
+      },
+      {
+        "name": "Morning Routine",
+        "completed": true,
+        "value": "07:27:00"
+      },
+      {
+        "name": "Cambrian",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Cross the threshhold",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Morning Prayer",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Sweeps and tactics",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Money Management",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Guitar Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Piano Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Singing",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "First Rally",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Post Breakfast Weight Management",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Flexibility Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Boxing Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Movement",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Knowledge or Skills",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Stocks (Addon videos currently Separate)",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Acting Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Screens",
+        "completed": false,
+        "value": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Checklist</title>
+<style>
+  :root { color-scheme: light; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #f4f2ef;
+    min-height: 100%;
+  }
+
+  * { box-sizing: border-box; }
+
+  #page {
+    padding: 32px 16px;
+    display: flex;
+    justify-content: center;
+  }
+
+  #app {
+    background: #0a0a0a;
+    color: #c19c6e;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    max-width: 640px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px 24px 20px;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  }
+
+  .title {
+    color: #c19c6e;
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+    margin: 0 0 16px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Tabs */
+  .tab-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  .tab-btn {
+    background: transparent;
+    border: none;
+    color: #777777;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .tab-btn:hover { color: #c19c6e; }
+  .tab-btn.active {
+    color: #c19c6e;
+    border-bottom-color: #8b5a2b;
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .input-row {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  #new-item-input {
+    flex: 1;
+    background: #1a1a1a;
+    color: #ffffff;
+    border: 2px solid #444444;
+    border-radius: 3px;
+    font-size: 14px;
+    font-family: inherit;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  #new-item-input:focus {
+    border-color: #c19c6e;
+  }
+
+  #add-btn {
+    background: #8b5a2b;
+    color: #ffffff;
+    border: none;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 10px 22px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  #add-btn:hover { background: #a16a3a; }
+  #add-btn:active { background: #7a4d24; }
+
+  #items-list {
+    min-height: 40px;
+    max-height: 480px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  #items-list::-webkit-scrollbar { width: 8px; }
+  #items-list::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+  #items-list::-webkit-scrollbar-track { background: #111; }
+
+  .empty-state {
+    color: #555555;
+    font-size: 13px;
+    font-style: italic;
+    text-align: center;
+    padding: 20px 0;
+  }
+
+  .item-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 4px;
+    gap: 2px;
+  }
+
+  .icon-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    padding: 6px;
+    border-radius: 3px;
+    transition: background 0.12s ease;
+    font-family: inherit;
+  }
+
+  .icon-btn:hover { background: #1e1e1e; }
+
+  .flag-btn { color: #f0c000; font-size: 16px; font-weight: bold; width: 30px; }
+  .flag-btn.active { color: #ff4444; }
+
+  .move-col {
+    display: flex;
+    flex-direction: column;
+    width: 22px;
+    margin: 0 2px;
+  }
+  .move-btn {
+    color: #c19c6e;
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+  .move-btn:hover { color: #e0b080; background: #1e1e1e; }
+  .move-btn:disabled { color: #333; cursor: default; background: none; }
+
+  .check-btn { color: #777777; font-size: 16px; width: 34px; }
+  .check-btn.done { color: #55ff55; }
+
+  .item-text {
+    flex: 1;
+    font-size: 14px;
+    padding: 0 10px;
+    color: #c19c6e;
+    word-break: break-word;
+  }
+  .item-text.priority { color: #ff4444; }
+  .item-text.completed {
+    color: #a0805a;
+    text-decoration: line-through;
+  }
+
+  .remove-btn { color: #ff5555; font-size: 13px; width: 28px; }
+  .remove-btn:hover { color: #ff7777; }
+
+  .list-header {
+    display: flex;
+    align-items: center;
+    padding: 0 4px 6px;
+  }
+  .header-flag { width: 30px; }
+  .header-move { width: 22px; margin: 0 2px; }
+  .header-check { width: 34px; }
+  .header-text { flex: 1; padding: 0 10px; }
+  .header-remove { width: 28px; }
+  .header-time {
+    width: 64px;
+    font-size: 11px;
+    color: #777777;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .time-col {
+    width: 64px;
+    flex-shrink: 0;
+    color: #777777;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .bottom-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+    padding-top: 14px;
+  }
+
+  .save-status {
+    font-size: 12px;
+    color: #55ff55;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .save-status.show { opacity: 1; }
+  .save-status.info { color: #c19c6e; }
+
+  .bottom-buttons { display: flex; gap: 15px; }
+
+  .exit-btn {
+    border: none;
+    border-radius: 3px;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    background: #4a2c1a;
+  }
+  .exit-btn:hover { background: #5a3c2a; }
+
+  /* Log table */
+  table.log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  table.log-table thead th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #777777;
+    padding: 0 10px 8px;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  table.log-table thead th.col-time { width: 110px; }
+  table.log-table tbody td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #1c1c1c;
+    color: #c19c6e;
+    vertical-align: top;
+  }
+  table.log-table tbody td.col-time {
+    color: #777777;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  table.log-table tbody tr:last-child td { border-bottom: none; }
+
+  /* Export view */
+  #export-textarea {
+    width: 100%;
+    height: 220px;
+    background: #1a1a1a;
+    color: #c19c6e;
+    border: 2px solid #444444;
+    border-radius: 3px;
+    font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+    font-size: 12px;
+    padding: 10px 12px;
+    resize: vertical;
+    margin-bottom: 14px;
+    outline: none;
+  }
+  #export-textarea:focus { border-color: #c19c6e; }
+
+  .export-hint {
+    font-size: 12px;
+    color: #777777;
+    margin: 0 0 14px;
+    line-height: 1.5;
+  }
+
+  .export-buttons { display: flex; gap: 14px; }
+
+  .export-btn {
+    border: none;
+    border-radius: 3px;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    background: #8b5a2b;
+  }
+  .export-btn:hover { background: #a16a3a; }
+</style>
+</head>
+<body>
+<div id="page">
+  <div id="app">
+    <h1 class="title">Checklist</h1>
+
+    <div class="tab-row">
+      <button class="tab-btn active" data-tab="checklist">Checklist</button>
+      <button class="tab-btn" data-tab="log">Completed Log</button>
+      <button class="tab-btn" data-tab="export">Export</button>
+    </div>
+
+    <div id="checklist-view" class="view active">
+      <div class="input-row">
+        <input id="new-item-input" type="text" placeholder="Add a new item..." autocomplete="off" />
+        <button id="add-btn">Add Item</button>
+      </div>
+
+      <div class="list-header">
+        <span class="header-cell header-flag"></span>
+        <span class="header-cell header-move"></span>
+        <span class="header-cell header-check"></span>
+        <span class="header-cell header-text"></span>
+        <span class="header-cell header-remove"></span>
+        <span class="header-cell header-time">Time</span>
+      </div>
+      <div id="items-list"></div>
+      <div id="empty-state" class="empty-state" style="display:none;">No items yet — add your first one above.</div>
+
+      <div class="bottom-row">
+        <div id="save-status" class="save-status"></div>
+        <div class="bottom-buttons">
+          <button id="exit-save-btn" class="exit-btn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="log-view" class="view">
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th class="col-time">Time Completed</th>
+          </tr>
+        </thead>
+        <tbody id="log-tbody"></tbody>
+      </table>
+      <div id="log-empty-state" class="empty-state" style="display:none;">Nothing completed yet.</div>
+    </div>
+
+    <div id="export-view" class="view">
+      <p class="export-hint">Copy or download this CSV, then hand it to Claude in chat to turn into an .ods, .xlsx, or any other file.</p>
+      <textarea id="export-textarea" readonly></textarea>
+      <div class="export-buttons">
+        <button id="copy-csv-btn" class="export-btn">Copy CSV</button>
+        <button id="download-csv-btn" class="export-btn">Download CSV</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = "checklist-items";
+  let items = [];
+
+  const listEl = document.getElementById("items-list");
+  const emptyEl = document.getElementById("empty-state");
+  const inputEl = document.getElementById("new-item-input");
+  const addBtn = document.getElementById("add-btn");
+  const exitSaveBtn = document.getElementById("exit-save-btn");
+  const statusEl = document.getElementById("save-status");
+  const logTbody = document.getElementById("log-tbody");
+  const logEmptyEl = document.getElementById("log-empty-state");
+  const tabBtns = document.querySelectorAll(".tab-btn");
+  const views = document.querySelectorAll(".view");
+  const exportTextarea = document.getElementById("export-textarea");
+  const copyCsvBtn = document.getElementById("copy-csv-btn");
+  const downloadCsvBtn = document.getElementById("download-csv-btn");
+
+  function uid() {
+    return "item-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function formatTime() {
+    return new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+
+  function flashStatus(text, ms, cls) {
+    statusEl.textContent = text;
+    statusEl.className = "save-status show" + (cls ? " " + cls : "");
+    clearTimeout(flashStatus._t);
+    flashStatus._t = setTimeout(() => {
+      statusEl.classList.remove("show");
+    }, ms || 1400);
+  }
+
+  function saveItems() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch (e) {
+      console.error("Save failed:", e);
+    }
+  }
+
+  function loadItems() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) items = JSON.parse(raw);
+    } catch (e) {
+      items = [];
+    }
+    render();
+  }
+
+  // Tabs
+  tabBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tabBtns.forEach((b) => b.classList.remove("active"));
+      views.forEach((v) => v.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(btn.dataset.tab + "-view").classList.add("active");
+      if (btn.dataset.tab === "log") renderLog();
+      if (btn.dataset.tab === "export") renderExport();
+    });
+  });
+
+  function csvEscape(value) {
+    const str = String(value == null ? "" : value);
+    if (/[",\n]/.test(str)) {
+      return '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
+  }
+
+  function buildCsv() {
+    const rows = [["Item", "Completed", "Priority", "Time Completed"]];
+    items.forEach((item) => {
+      rows.push([
+        item.text,
+        item.completed ? "Yes" : "No",
+        item.priority ? "Yes" : "No",
+        item.completedAt || "",
+      ]);
+    });
+    return rows.map((r) => r.map(csvEscape).join(",")).join("\r\n");
+  }
+
+  function renderExport() {
+    exportTextarea.value = buildCsv();
+  }
+
+  copyCsvBtn.addEventListener("click", async () => {
+    const csv = buildCsv();
+    try {
+      await navigator.clipboard.writeText(csv);
+      flashStatus("Copied to clipboard ✓", 1400);
+    } catch (e) {
+      exportTextarea.focus();
+      exportTextarea.select();
+      try {
+        document.execCommand("copy");
+        flashStatus("Copied to clipboard ✓", 1400);
+      } catch (e2) {
+        flashStatus("Select the text and copy manually", 2000, "info");
+      }
+    }
+  });
+
+  downloadCsvBtn.addEventListener("click", () => {
+    const csv = buildCsv();
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "checklist-export.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    flashStatus("Downloading…", 1400, "info");
+  });
+
+  function render() {
+    listEl.innerHTML = "";
+    emptyEl.style.display = items.length === 0 ? "block" : "none";
+
+    items.forEach((item, idx) => {
+      const row = document.createElement("div");
+      row.className = "item-row";
+
+      const flagBtn = document.createElement("button");
+      flagBtn.className = "icon-btn flag-btn" + (item.priority ? " active" : "");
+      flagBtn.textContent = "⚑";
+      flagBtn.title = "Toggle priority";
+      flagBtn.onclick = () => togglePriority(item.id);
+      row.appendChild(flagBtn);
+
+      const moveCol = document.createElement("div");
+      moveCol.className = "move-col";
+
+      const upBtn = document.createElement("button");
+      upBtn.className = "icon-btn move-btn";
+      upBtn.textContent = "▲";
+      upBtn.title = "Move up";
+      upBtn.disabled = idx === 0;
+      upBtn.onclick = () => moveItem(item.id, "up");
+
+      const downBtn = document.createElement("button");
+      downBtn.className = "icon-btn move-btn";
+      downBtn.textContent = "▼";
+      downBtn.title = "Move down";
+      downBtn.disabled = idx === items.length - 1;
+      downBtn.onclick = () => moveItem(item.id, "down");
+
+      moveCol.appendChild(upBtn);
+      moveCol.appendChild(downBtn);
+      row.appendChild(moveCol);
+
+      const checkBtn = document.createElement("button");
+      checkBtn.className = "icon-btn check-btn" + (item.completed ? " done" : "");
+      checkBtn.textContent = item.completed ? "✔" : "⬜";
+      checkBtn.title = "Toggle complete";
+      checkBtn.onclick = () => toggleComplete(item.id);
+      row.appendChild(checkBtn);
+
+      const label = document.createElement("span");
+      label.className = "item-text" +
+        (item.completed ? " completed" : (item.priority ? " priority" : ""));
+      label.textContent = item.text;
+      row.appendChild(label);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "icon-btn remove-btn";
+      removeBtn.textContent = "❌";
+      removeBtn.title = "Remove item";
+      removeBtn.onclick = () => removeItem(item.id);
+      row.appendChild(removeBtn);
+
+      const timeEl = document.createElement("span");
+      timeEl.className = "time-col";
+      timeEl.textContent = item.completed && item.completedAt ? item.completedAt : "";
+      row.appendChild(timeEl);
+
+      listEl.appendChild(row);
+    });
+
+    // Keep the log and export tabs current too, in case they're visible or get switched to
+    renderLog();
+    renderExport();
+  }
+
+  function renderLog() {
+    const completed = items
+      .filter((i) => i.completed)
+      .slice()
+      .sort((a, b) => (b.completedAtMs || 0) - (a.completedAtMs || 0));
+
+    logTbody.innerHTML = "";
+    logEmptyEl.style.display = completed.length === 0 ? "block" : "none";
+
+    completed.forEach((item) => {
+      const tr = document.createElement("tr");
+
+      const itemTd = document.createElement("td");
+      itemTd.textContent = item.text;
+      tr.appendChild(itemTd);
+
+      const timeTd = document.createElement("td");
+      timeTd.className = "col-time";
+      timeTd.textContent = item.completedAt || "";
+      tr.appendChild(timeTd);
+
+      logTbody.appendChild(tr);
+    });
+  }
+
+  function addItem() {
+    const text = inputEl.value.trim();
+    if (!text) return;
+    items.push({ id: uid(), text, completed: false, priority: false, completedAt: null, completedAtMs: null });
+    inputEl.value = "";
+    inputEl.focus();
+    render();
+    saveItems();
+  }
+
+  function toggleComplete(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    item.completed = !item.completed;
+    item.completedAt = item.completed ? formatTime() : null;
+    item.completedAtMs = item.completed ? Date.now() : null;
+    render();
+    saveItems();
+  }
+
+  function togglePriority(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    item.priority = !item.priority;
+    render();
+    saveItems();
+  }
+
+  function moveItem(id, direction) {
+    const idx = items.findIndex(i => i.id === id);
+    if (idx === -1) return;
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= items.length) return;
+    const tmp = items[idx];
+    items[idx] = items[targetIdx];
+    items[targetIdx] = tmp;
+    render();
+    saveItems();
+  }
+
+  function removeItem(id) {
+    items = items.filter(i => i.id !== id);
+    render();
+    saveItems();
+  }
+
+  addBtn.addEventListener("click", addItem);
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addItem();
+  });
+
+  exitSaveBtn.addEventListener("click", () => {
+    saveItems();
+    flashStatus("Saved ✓", 1400);
+  });
+
+  loadItems();
+})();
+</script>
+</body>
+</html>
