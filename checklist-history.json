@@ -210,7 +210,7 @@
     ]
   },
   "2026-07-23": {
-    "loggedAt": "2026-07-23T01:00:17.082297",
+    "loggedAt": "2026-07-23T01:08:50.722426",
     "items": [
       {
         "name": "Start",
@@ -229,53 +229,53 @@
       },
       {
         "name": "Cross the threshhold",
-        "completed": true,
-        "value": "51 min"
+        "completed": false,
+        "value": null
       },
       {
         "name": "Morning Prayer",
-        "completed": true,
-        "value": "2h 58m"
+        "completed": false,
+        "value": null
       },
       {
         "name": "Sweeps and tactics",
-        "completed": true,
-        "value": "0 min"
+        "completed": false,
+        "value": null
       },
       {
         "name": "Money Management",
-        "completed": true,
-        "value": "0 min"
+        "completed": false,
+        "value": null
       },
       {
         "name": "Guitar Training",
-        "completed": true,
-        "value": "1h 34m"
+        "completed": false,
+        "value": null
       },
       {
         "name": "Piano Training",
-        "completed": true,
-        "value": "1h 34m"
+        "completed": false,
+        "value": null
       },
       {
         "name": "Singing",
-        "completed": true,
-        "value": "1 min"
+        "completed": false,
+        "value": null
       },
       {
         "name": "First Rally",
-        "completed": true,
-        "value": "9h 11m"
+        "completed": false,
+        "value": null
       },
       {
         "name": "Post Breakfast Weight Management",
-        "completed": true,
-        "value": "0 min"
+        "completed": false,
+        "value": null
       },
       {
         "name": "Flexibility Training",
-        "completed": true,
-        "value": "29 min"
+        "completed": false,
+        "value": null
       },
       {
         "name": "Training",
