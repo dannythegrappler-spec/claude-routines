@@ -210,7 +210,7 @@
     ]
   },
   "2026-07-23": {
-    "loggedAt": "2026-07-23T01:41:49.461228",
+    "loggedAt": "2026-07-23T01:42:16.636464",
     "items": [
       {
         "name": "Start",
@@ -279,8 +279,8 @@
       },
       {
         "name": "Training",
-        "completed": false,
-        "value": null
+        "completed": true,
+        "value": "43 min"
       },
       {
         "name": "Boxing Training",
