@@ -210,7 +210,7 @@
     ]
   },
   "2026-07-23": {
-    "loggedAt": "2026-07-23T00:58:51.658790",
+    "loggedAt": "2026-07-23T01:00:17.082297",
     "items": [
       {
         "name": "Start",
@@ -274,8 +274,8 @@
       },
       {
         "name": "Flexibility Training",
-        "completed": false,
-        "value": null
+        "completed": true,
+        "value": "29 min"
       },
       {
         "name": "Training",
