@@ -169,6 +169,8 @@ def main():
         git("push")
         print("Pushed.")
 
+    print("\n=== DONE — checklist and reports updated ===")
+
 
 if __name__ == "__main__":
     main()
