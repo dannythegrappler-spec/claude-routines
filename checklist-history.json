@@ -210,7 +210,7 @@
     ]
   },
   "2026-07-23": {
-    "loggedAt": "2026-07-23T00:29:31.216710",
+    "loggedAt": "2026-07-23T00:31:50.146822",
     "items": [
       {
         "name": "Start",
@@ -264,13 +264,13 @@
       },
       {
         "name": "First Rally",
-        "completed": false,
-        "value": null
+        "completed": true,
+        "value": "00:30:00"
       },
       {
         "name": "Post Breakfast Weight Management",
-        "completed": false,
-        "value": null
+        "completed": true,
+        "value": "00:30:00"
       },
       {
         "name": "Flexibility Training",
