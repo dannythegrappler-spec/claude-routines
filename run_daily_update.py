@@ -1,6 +1,8 @@
 import csv
 import ctypes
+import importlib.util
 import io
+import os
 import re
 import subprocess
 import sys
@@ -8,10 +10,21 @@ import xml.etree.ElementTree as ET
 import zipfile
 from datetime import date
 
-import generate_report
-import build_timeline
-import generate_table_html
-import generate_artifact_html
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def load_sibling(name):
+    path = os.path.join(SCRIPT_DIR, f"{name}.py")
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+generate_report = load_sibling("generate_report")
+build_timeline = load_sibling("build_timeline")
+generate_table_html = load_sibling("generate_table_html")
+generate_artifact_html = load_sibling("generate_artifact_html")
 
 CSV_FILE = "checklist_input.csv"
 ODS_FILE = "checklist.ods"
@@ -141,7 +154,6 @@ def run_step(label, func):
 
 
 def play_done_sound():
-    import os
     path = os.path.abspath(DONE_SOUND)
     if not os.path.exists(path):
         return
