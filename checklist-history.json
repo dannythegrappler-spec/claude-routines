@@ -105,7 +105,112 @@
     ]
   },
   "2026-07-22": {
-    "loggedAt": "2026-07-22T09:21:05.107388",
+    "loggedAt": "2026-07-22T23:10:17.856099",
+    "items": [
+      {
+        "name": "Start",
+        "completed": true,
+        "value": "6:48 AM"
+      },
+      {
+        "name": "Morning Routine",
+        "completed": true,
+        "value": "39 min"
+      },
+      {
+        "name": "Cambrian",
+        "completed": true,
+        "value": "54 min"
+      },
+      {
+        "name": "Cross the threshhold",
+        "completed": true,
+        "value": "51 min"
+      },
+      {
+        "name": "Morning Prayer",
+        "completed": true,
+        "value": "2h 58m"
+      },
+      {
+        "name": "Sweeps and tactics",
+        "completed": true,
+        "value": "0 min"
+      },
+      {
+        "name": "Money Management",
+        "completed": true,
+        "value": "0 min"
+      },
+      {
+        "name": "Guitar Training",
+        "completed": true,
+        "value": "1h 34m"
+      },
+      {
+        "name": "Piano Training",
+        "completed": true,
+        "value": "1h 34m"
+      },
+      {
+        "name": "Singing",
+        "completed": true,
+        "value": "1 min"
+      },
+      {
+        "name": "First Rally",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Post Breakfast Weight Management",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Flexibility Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Boxing Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Movement",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Knowledge or Skills",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Stocks (Addon videos currently Separate)",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Acting Training",
+        "completed": false,
+        "value": null
+      },
+      {
+        "name": "Screens",
+        "completed": false,
+        "value": null
+      }
+    ]
+  },
+  "2026-07-23": {
+    "loggedAt": "2026-07-23T00:01:22.970997",
     "items": [
       {
         "name": "Start",
