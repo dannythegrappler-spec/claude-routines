@@ -134,9 +134,22 @@ def run_script(script_name):
         sys.exit(f"{script_name} failed:\n{result.stderr}")
 
 
+def read_csv_from_prompt():
+    print("Paste your checklist CSV update (header + rows), then press Enter on a blank line when done:")
+    lines = []
+    while True:
+        line = input()
+        if line.strip() == "" and lines:
+            break
+        lines.append(line)
+    csv_text = "\n".join(lines) + "\n"
+    with open(CSV_FILE, "w", encoding="utf-8") as f:
+        f.write(csv_text)
+    return csv_text
+
+
 def main():
-    with open(CSV_FILE, encoding="utf-8") as f:
-        csv_text = f.read()
+    csv_text = read_csv_from_prompt()
 
     print(f"Updating {ODS_FILE}...")
     update_ods(ODS_FILE, csv_text)
