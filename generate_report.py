@@ -6,7 +6,7 @@ and rebuilds 30-day-report.ods (items x last-30-days grid) in the same folder.
 Run this from within the Checklist folder, or pass the folder as argv[1].
 """
 import sys, os, json, re, zipfile
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time as dtime, timedelta
 
 FOLDER = sys.argv[1] if len(sys.argv) > 1 else "."
 CHECKLIST_PATH = os.path.join(FOLDER, "checklist.ods")
@@ -14,20 +14,10 @@ HISTORY_PATH = os.path.join(FOLDER, "checklist-history.json")
 REPORT_PATH = os.path.join(FOLDER, "30-day-report.ods")
 
 
-def read_checklist_rows(path):
-    import pandas as pd
-    df = pd.read_excel(path, engine="odf", header=0)
-    df = df.fillna("")
-    rows = []
-    for _, r in df.iterrows():
-        item = str(r.get("Item", "")).strip()
-        if not item:
-            continue
-        completed_raw = str(r.get("Completed", "")).strip().lower()
-        completed = completed_raw in ("yes", "true")
-        time_completed = str(r.get("Time Completed", "")).strip()
-        rows.append({"name": item, "completed": completed, "time": time_completed})
-    return rows
+def format_time_12h(hour24, minute):
+    period = "AM" if hour24 < 12 else "PM"
+    hour12 = hour24 % 12 or 12
+    return f"{hour12}:{minute:02d} {period}"
 
 
 def parse_time_to_minutes(s):
@@ -46,6 +36,29 @@ def parse_time_to_minutes(s):
     return hh * 60 + mm
 
 
+def read_checklist_rows(path):
+    import pandas as pd
+    df = pd.read_excel(path, engine="odf", header=0)
+    rows = []
+    for _, r in df.iterrows():
+        item = str(r.get("Item", "")).strip()
+        if not item:
+            continue
+        completed_raw = str(r.get("Completed", "")).strip().lower()
+        completed = completed_raw in ("yes", "true")
+        raw_time = r.get("Time Completed")
+        minutes = None
+        display = ""
+        if isinstance(raw_time, dtime):
+            minutes = raw_time.hour * 60 + raw_time.minute
+            display = format_time_12h(raw_time.hour, raw_time.minute)
+        elif isinstance(raw_time, str) and raw_time.strip():
+            display = raw_time.strip()
+            minutes = parse_time_to_minutes(display)
+        rows.append({"name": item, "completed": completed, "minutes": minutes, "display": display})
+    return rows
+
+
 def format_duration(mins):
     if mins is None or mins < 0:
         return None
@@ -60,17 +73,16 @@ def compute_records(rows):
     last_minutes = None
     for r in rows:
         value = None
-        if r["completed"]:
-            cur = parse_time_to_minutes(r["time"])
-            if cur is not None and last_minutes is not None:
+        if r["completed"] and r["minutes"] is not None:
+            cur = r["minutes"]
+            if last_minutes is not None:
                 diff = cur - last_minutes
                 if diff < 0:
                     diff += 24 * 60
                 value = format_duration(diff)
-            elif r["time"]:
-                value = r["time"]
-            if cur is not None:
-                last_minutes = cur
+            else:
+                value = r["display"]
+            last_minutes = cur
         records.append({"name": r["name"], "completed": r["completed"], "value": value})
     return records
 
