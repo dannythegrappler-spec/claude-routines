@@ -8,6 +8,11 @@ import xml.etree.ElementTree as ET
 import zipfile
 from datetime import date
 
+import generate_report
+import build_timeline
+import generate_table_html
+import generate_artifact_html
+
 CSV_FILE = "checklist_input.csv"
 ODS_FILE = "checklist.ods"
 DONE_SOUND = "DailyProgressComplete.mp3"
@@ -127,13 +132,12 @@ def git(*args):
     return result.stdout
 
 
-def run_script(script_name):
-    print(f"Running {script_name}...")
-    result = subprocess.run([sys.executable, script_name], capture_output=True, text=True)
-    if result.stdout:
-        print(result.stdout, end="")
-    if result.returncode != 0:
-        sys.exit(f"{script_name} failed:\n{result.stderr}")
+def run_step(label, func):
+    print(f"Running {label}...")
+    try:
+        func()
+    except SystemExit as e:
+        sys.exit(f"{label} failed: {e}")
 
 
 def play_done_sound():
@@ -167,10 +171,10 @@ def main():
     print(f"Updating {ODS_FILE}...")
     update_ods(ODS_FILE, csv_text)
 
-    run_script("generate_report.py")
-    run_script("build_timeline.py")
-    run_script("generate_table_html.py")
-    run_script("generate_artifact_html.py")
+    run_step("generate_report", generate_report.main)
+    run_step("build_timeline", build_timeline.main)
+    run_step("generate_table_html", generate_table_html.main)
+    run_step("generate_artifact_html", generate_artifact_html.main)
 
     print("Committing and pushing...")
     git("add", *REPORT_OUTPUT_FILES)

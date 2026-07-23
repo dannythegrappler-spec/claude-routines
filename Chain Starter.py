@@ -1,15 +1,18 @@
-import subprocess
+import os
 import sys
 from pathlib import Path
 
-TARGET_SCRIPT = r"Y:\Claude Stuff\Checklist\run_daily_update.py"
-TARGET_DIR = str(Path(TARGET_SCRIPT).parent)
+TARGET_DIR = Path(r"Y:\Claude Stuff\Checklist")
 
 
 def main():
-    result = subprocess.run([sys.executable, TARGET_SCRIPT], cwd=TARGET_DIR)
-    if result.returncode != 0:
-        print(f"\nrun_daily_update.py exited with an error (code {result.returncode}).")
+    os.chdir(TARGET_DIR)
+    sys.path.insert(0, str(TARGET_DIR))
+    import run_daily_update
+    try:
+        run_daily_update.main()
+    except SystemExit as e:
+        print(f"\nrun_daily_update failed: {e}")
     try:
         input("\nPress Enter to close...")
     except EOFError:
