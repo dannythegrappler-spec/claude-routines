@@ -1,4 +1,5 @@
 import csv
+import ctypes
 import io
 import re
 import subprocess
@@ -9,6 +10,7 @@ from datetime import date
 
 CSV_FILE = "checklist_input.csv"
 ODS_FILE = "checklist.ods"
+DONE_SOUND = "DailyProgressComplete.mp3"
 
 NS = {
     "office": "urn:oasis:names:tc:opendocument:xmlns:office:1.0",
@@ -134,6 +136,17 @@ def run_script(script_name):
         sys.exit(f"{script_name} failed:\n{result.stderr}")
 
 
+def play_done_sound():
+    import os
+    path = os.path.abspath(DONE_SOUND)
+    if not os.path.exists(path):
+        return
+    winmm = ctypes.windll.winmm
+    winmm.mciSendStringW(f'open "{path}" type mpegvideo alias donesound', None, 0, None)
+    winmm.mciSendStringW("play donesound wait", None, 0, None)
+    winmm.mciSendStringW("close donesound", None, 0, None)
+
+
 def read_csv_from_prompt():
     print("Paste your checklist CSV update (header + rows), then press Enter on a blank line when done:")
     lines = []
@@ -170,6 +183,7 @@ def main():
         print("Pushed.")
 
     print("\n=== DONE — checklist and reports updated ===")
+    play_done_sound()
 
 
 if __name__ == "__main__":
